@@ -7,14 +7,16 @@ enum info {
     Opt1 = 4,
     Opt2 = 5,
 };
-enum format {
-    Line1 = 1,
-    Line2 = 2,
-    Line3 = 3,
-    Line4 = 4,
-    Line5 = 5,
+enum args {
+    noargs = 0,
+    save = 1,
+    changv = 2,
+    help = 3,
+    changh = 4,
+    dpv = 5,
     Line6 = 6,
 };
 extern char **Settings;
 extern int voffset;
+extern int hoffset;
 #endif
