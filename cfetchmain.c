@@ -89,25 +89,36 @@ void drawoutp(char **argv, int voffset, int hoffset) {
     uname(&Linux);
     int memory;
     int memoryfree;
-    char grepoutp[4][50]; // = malloc(100);
+    char grepoutp[5][50]; // = malloc(100);
     char fmemcmd[40];
     FILE *mem = popen("grep \"MemTotal\" /proc/meminfo", "r");
     FILE *memu = popen("grep \"MemAvailable\" /proc/meminfo", "r");
     FILE *cpu = popen("grep -m 1 \"model name\" /proc/cpuinfo", "r");
+    FILE *uptime = popen("uptime -p", "r");
+    FILE *device = popen("hostnamectl | grep \"Hardware Model:\"","r");
     //FILE *ex = popen("grep \"MemFree\" /proc/meminfo", "r");
     fgets(grepoutp[0], 40, mem); 
     fgets(grepoutp[1], 40, memu);
-    fgets(grepoutp[2], 40, cpu); 
-    printf("Gpout0= %s",grepoutp[0]);
-    printf("Gpout1= %s",grepoutp[1]);
-    printf("Gpout1= %s\n",grepoutp[2]);
+    fgets(grepoutp[2], 40, cpu);
+    fgets(grepoutp[3], 40, uptime); 
+    fgets(grepoutp[4], 40 , device);
+    /*
+    printf("Gpout0= %s\n",grepoutp[0]);
+    printf("Gpout1= %s\n",grepoutp[1]);
+    printf("Gpout2= %s\n",grepoutp[2]);
+    printf("Gpout3= %s\n",grepoutp[3]);
+    printf("Gpout4= %s\n",grepoutp[4]);
+    */
     pclose(mem);
     pclose(memu);
     pclose(cpu);
-    printf("Grep outp size %lu\n", sizeof(grepoutp)+2);
+    pclose(uptime);
+    pclose(device);
+
+    //printf("Grep outp size %lu\n", sizeof(grepoutp)+2);
     char (*memoryr)[60];
-    printf("Mem alloc=%lu\n",sizeof(*memoryr)*4);
-    memoryr = malloc(sizeof(*memoryr)*4); //Remember this.
+    //printf("Mem alloc=%lu\n",sizeof(*memoryr)*7);
+    memoryr = malloc(sizeof(*memoryr)*7); //Remember this.
     //*memoryr = (char*)malloc(sizeof(grepoutp)+1);
 
     int k = 0;
@@ -137,28 +148,55 @@ void drawoutp(char **argv, int voffset, int hoffset) {
         }
         i++;
     }
-    printf("CPU info %s\n", memoryr[2]);
+    i = 0;
+    k = 0;
+
+    while (1) {
+        if (grepoutp[3][i] == ' ') {
+            i++;
+            while (grepoutp[3][i] != '\n') {
+            memoryr[3][k++] = grepoutp[3][i++];
+            }
+            break;
+        }
+        i++;
+    }
+    k = 0;
+    i = 0;
+    while (1) {
+        if (grepoutp[4][i] == ':') {
+            i++;
+            while (grepoutp[4][i] != '\n') {
+            memoryr[4][k++] = grepoutp[4][i++];
+            }
+            break;
+        }
+        i++;
+    }
+    //printf("CPU info %s\n", memoryr[2]);
     i = 0;
     //memoryr[0][++k] = '\0';
     //memoryr[1][++k] = '\0';
     memory = atoi(memoryr[0]);
     memoryfree = atoi(memoryr[1]);
-    printf("memfree=%d",memoryfree);
+    //printf("memfree=%d",memoryfree);
     memory = memory/1024;
     memoryfree = memory - (memoryfree/1024);
     free(memoryr);
-    char info[5][303];
+    char info[8][303];
     //char *syst = (char*)malloc(sizeof(char) * 100);
     //char *host = (char*)malloc(sizeof(char) * 100);
     //char *sess = (char*)malloc(sizeof(char) * 100);
     //char *opt = (char*)malloc(sizeof(char) * 100);
     //char *opt2  = (char*)malloc(sizeof(char) * 100);
-
-    sprintf(info[0], "OS: %s %s %s\'", Linux.sysname, Linux.release, Linux.machine);
-    sprintf(info[1], "Hostname: %s@%s\'", getenv("USER"), Linux.nodename );
-    sprintf(info[2], "DE: %s\'", getenv("GDMSESSION"));
-    sprintf(info[3], "Memory: %dmB / %dmB\'",memoryfree, memory);
-    sprintf(info[4], "CPU:%s\'",memoryr[2]);
+    sprintf(info[0], "%s@%s\'", getenv("USER"), Linux.nodename );
+    sprintf(info[1], "---------------------------\'");
+    sprintf(info[2], "Host:%s\'", memoryr[4]);
+    sprintf(info[3], "OS: %s %s %s\'", Linux.sysname, Linux.release, Linux.machine);
+    sprintf(info[4], "DE: %s\'", getenv("GDMSESSION"));
+    sprintf(info[5], "Memory: %dmB / %dmB\'",memoryfree, memory);
+    sprintf(info[6], "CPU:%s\'",memoryr[2]);
+    sprintf(info[7], "Uptime: %s\'", memoryr[3]);
     
     FILE *art = fopen("cfetchart", "r");
 
@@ -223,6 +261,39 @@ void drawoutp(char **argv, int voffset, int hoffset) {
                 }
                 while ( info[4][i] != '\'') {
                 putchar(info[4][i]);
+                ++i;
+                }
+                break;
+
+                case 6:
+                while (h < hoffset) {
+                putchar(' ');
+                ++h;
+                }
+                while ( info[5][i] != '\'') {
+                putchar(info[5][i]);
+                ++i;
+                }
+                break;
+
+                case 7:
+                while (h < hoffset) {
+                putchar(' ');
+                ++h;
+                }
+                while ( info[6][i] != '\'') {
+                putchar(info[6][i]);
+                ++i;
+                }
+                break;
+
+                case 8:
+                while (h < hoffset) {
+                putchar(' ');
+                ++h;
+                }
+                while ( info[7][i] != '\'') {
+                putchar(info[7][i]);
                 ++i;
                 }
                 break;
