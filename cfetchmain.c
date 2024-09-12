@@ -23,6 +23,8 @@ void saveart(int argc, char **argv);
 void drawoutp(char **agrv, int voffset, int hoffset);
 void popconf();
 void args(int argc, char **argv);
+void prcsstring(const char *src, char *dst, char delimiter);
+void getdigits(const char *src, char *dst);
 
 int main(int argc, char **argv) {
 
@@ -89,7 +91,7 @@ void drawoutp(char **argv, int voffset, int hoffset) {
     uname(&Linux);
     int memory;
     int memoryfree;
-    char grepoutp[8][50]; // = malloc(100);
+    char grepoutp[7][51]; // = malloc(100);
     char fmemcmd[40];
     FILE *mem = popen("grep \"MemTotal\" /proc/meminfo", "r");
     FILE *memu = popen("grep \"MemAvailable\" /proc/meminfo", "r");
@@ -97,6 +99,7 @@ void drawoutp(char **argv, int voffset, int hoffset) {
     FILE *uptime = popen("uptime -p", "r");
     FILE *device = popen("hostnamectl | grep \"Hardware Model:\"","r");
     FILE *OS = popen("hostnamectl | grep \"Operating System:\"","r");
+    FILE *Kernel = popen("hostnamectl | grep \"Kernel:\"","r");
     //FILE *ex = popen("grep \"MemFree\" /proc/meminfo", "r");
     fgets(grepoutp[0], 40, mem); 
     fgets(grepoutp[1], 40, memu);
@@ -104,6 +107,7 @@ void drawoutp(char **argv, int voffset, int hoffset) {
     fgets(grepoutp[3], 40, uptime); 
     fgets(grepoutp[4], 40 , device);
     fgets(grepoutp[5], 40 , OS);
+    fgets(grepoutp[6], 50 , Kernel);
     /*
     printf("Gpout0= %s\n",grepoutp[0]);
     printf("Gpout1= %s\n",grepoutp[1]);
@@ -117,101 +121,42 @@ void drawoutp(char **argv, int voffset, int hoffset) {
     pclose(uptime);
     pclose(device);
     pclose(OS);
+    pclose(Kernel);
 
     //printf("Grep outp size %lu\n", sizeof(grepoutp)+2);
-    char (*memoryr)[60];
-    //printf("Mem alloc=%lu\n",sizeof(*memoryr)*7);
-    memoryr = malloc(sizeof(*memoryr)*7); //Remember this.
-    //*memoryr = (char*)malloc(sizeof(grepoutp)+1);
+    //char (*sysinfo)[300];
+    //printf("Mem alloc=%lu\n",sizeof(*sysinfo)*7);
+    //sysinfo = calloc(300, sizeof(*sysinfo)); 
+    char (*sysinfo)[300] = calloc(1, sizeof(*sysinfo)); //Remember this.
 
-    int k = 0;
-    while (grepoutp[0][i] != '\0') {
-        if (isdigit(grepoutp[0][i]) != 0) {
-            memoryr[0][k++] = grepoutp[0][i];
-        }
-        i++;
-    }
-    i = 0;
-    k = 0;
-    while (grepoutp[1][i] != '\0') {
-        if (isdigit(grepoutp[1][i]) != 0) {
-            memoryr[1][k++] = grepoutp[1][i];
-        }
-        i++;
-    }
-    i = 0;
-    k = 0;
-    while (1) {
-        if (grepoutp[2][i] == ':') {
-            i++;
-            while (grepoutp[2][i] != '\0') {
-            memoryr[2][k++] = grepoutp[2][i++];
-            }
-            break;
-        }
-        i++;
-    }
-    i = 0;
-    k = 0;
 
-    while (1) {
-        if (grepoutp[3][i] == ' ') {
-            i++;
-            while (grepoutp[3][i] != '\n') {
-            memoryr[3][k++] = grepoutp[3][i++];
-            }
-            break;
-        }
-        i++;
-    }
-    k = 0;
-    i = 0;
-    while (1) {
-        if (grepoutp[4][i] == ':') {
-            i++;
-            while (grepoutp[4][i] != '\n') {
-            memoryr[4][k++] = grepoutp[4][i++];
-            }
-            break;
-        }
-        i++;
-    }
-    i = 0;
-    k = 0;
-    while (1) {
-        if (grepoutp[5][i] == ':') {
-            i++;
-            while (grepoutp[5][i] != '\n') {
-            memoryr[5][k++] = grepoutp[5][i++];
-            }
-            break;
-        }
-        i++;
-    }
-    i = 0;
-    //printf("CPU info %s\n", memoryr[2]);
-    //memoryr[0][++k] = '\0';
-    //memoryr[1][++k] = '\0';
-    memory = atoi(memoryr[0]);
-    memoryfree = atoi(memoryr[1]);
+    getdigits(grepoutp[0], sysinfo[0]);
+    getdigits(grepoutp[1], sysinfo[1]);
+    prcsstring(grepoutp[2], sysinfo[2], ':');
+    prcsstring(grepoutp[3], sysinfo[3], ' ');
+    prcsstring(grepoutp[4], sysinfo[4], ':');
+    prcsstring(grepoutp[5], sysinfo[5], ':');
+    prcsstring(grepoutp[6], sysinfo[6], ':');
+    
+    //printf("CPU info %s\n", sysinfo[2]);
+    
+    memory = atoi(sysinfo[0]);
+    memoryfree = atoi(sysinfo[1]);
     //printf("memfree=%d",memoryfree);
     memory = memory/1024;
     memoryfree = memory - (memoryfree/1024);
-    free(memoryr);
-    char info[8][303];
-    //char *syst = (char*)malloc(sizeof(char) * 100);
-    //char *host = (char*)malloc(sizeof(char) * 100);
-    //char *sess = (char*)malloc(sizeof(char) * 100);
-    //char *opt = (char*)malloc(sizeof(char) * 100);
-    //char *opt2  = (char*)malloc(sizeof(char) * 100);
+    free(sysinfo);
+    char info[9][303];
+
     sprintf(info[0], "%s@%s\'", getenv("USER"), Linux.nodename );
     sprintf(info[1], "---------------------------\'");
-    sprintf(info[2], "Host:%s\'", memoryr[4]);
-    sprintf(info[3], "OS:%s %s %s\'", memoryr[5], Linux.release, Linux.machine);
-    sprintf(info[4], "DE: %s\'", getenv("GDMSESSION"));
-    sprintf(info[5], "Memory: %dmB / %dmB\'",memoryfree, memory);
-    sprintf(info[6], "CPU:%s\'",memoryr[2]);
-    sprintf(info[7], "Uptime: %s\'", memoryr[3]);
+    sprintf(info[2], "Host:%s\'", sysinfo[4]);
+    sprintf(info[3], "OS:%s %s\'", sysinfo[5], Linux.machine);
+    sprintf(info[4], "Kernel:%s\'", sysinfo[6]);
+    sprintf(info[5], "DE: %s\'", getenv("GDMSESSION"));
+    sprintf(info[6], "Memory: %dmB / %dmB\'",memoryfree, memory);
+    sprintf(info[7], "CPU:%s\'",sysinfo[2]);
+    sprintf(info[8], "Uptime: %s\'", sysinfo[3]);
     
     FILE *art = fopen("cfetchart", "r");
 
@@ -229,7 +174,7 @@ void drawoutp(char **argv, int voffset, int hoffset) {
                 ++h;
             }
             int index = newlcnt - voffset - 1; // index = -4 if 1 - 4 - 1, if it is below zero, it wont print.
-             if (index >= 0 && index < 8) { // Remember this to not have a GIGANTIC switch statement.
+             if (index >= 0 && index < 9) { // Remember this to not have a GIGANTIC switch statement.
                 while (info[index][i] != '\'') {
                     putchar(info[index][i]);
                     ++i;
@@ -244,9 +189,6 @@ void drawoutp(char **argv, int voffset, int hoffset) {
     puts("\n");
     //printf("Length: %d\n",llength);
     fclose(art);
-    //free(syst);
-    //free(host);
-    //free(sess);
 }
 void popconf() {
     char Settings[3][20];
@@ -332,4 +274,28 @@ void args(int argc, char **argv){
         printf("cfetch: Invalid arguments, -h for help.\n");
         exit(1);
     }
+}
+void prcsstring(const char *src, char *dst, char delimiter) {
+    int i = 0, k = 0;
+    while (src[i] != '\0') {
+        if (src[i] == delimiter) {
+            i++;
+            while (src[i] != '\0' && src[i] != '\n') { // REMEMBER how to set this up, saves SO much time.
+                dst[k++] = src[i++];
+            }
+            break;
+        }
+        i++;
+    }
+    dst[k] = '\0';
+}
+void getdigits(const char *src, char *dst) {
+    int i = 0, k = 0;
+    while (src[i] != '\n' && src[i] != '\0') {
+        if (isdigit(src[i])) {
+            dst[k++] = src[i];
+        }
+        i++;
+    }
+    dst[k] = '\0';  // ALWAYS use functions. I need to stop making redundant code.
 }
