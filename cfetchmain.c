@@ -13,7 +13,6 @@
 #include <X11/Xlib.h>
 #include "cfetch.h"
 char chr;
-int set;
 int llength;
 int voffset = 0;
 int hoffset = 8;
@@ -56,7 +55,6 @@ int main(int argc, char **argv) {
 
     voffset = atoi(&configf[0][9]); //could have done this the whole time for config. hours spent...
     hoffset = atoi(&configf[1][9]); 
-    set = 0;
 
     args(argc, argv);
     return 0;
@@ -91,8 +89,7 @@ void drawoutp(char **argv, int voffset, int hoffset) {
     uname(&Linux);
     int memory;
     int memoryfree;
-    char grepoutp[7][51]; // = malloc(100);
-    char fmemcmd[40];
+    char grepoutp[7][75]; // = malloc(100);
     FILE *mem = popen("grep \"MemTotal\" /proc/meminfo", "r");
     FILE *memu = popen("grep \"MemAvailable\" /proc/meminfo", "r");
     FILE *cpu = popen("grep -m 1 \"model name\" /proc/cpuinfo", "r");
@@ -101,20 +98,14 @@ void drawoutp(char **argv, int voffset, int hoffset) {
     FILE *OS = popen("hostnamectl | grep \"Operating System:\"","r");
     FILE *Kernel = popen("hostnamectl | grep \"Kernel:\"","r");
     //FILE *ex = popen("grep \"MemFree\" /proc/meminfo", "r");
-    fgets(grepoutp[0], 40, mem); 
-    fgets(grepoutp[1], 40, memu);
-    fgets(grepoutp[2], 40, cpu);
-    fgets(grepoutp[3], 40, uptime); 
-    fgets(grepoutp[4], 40 , device);
-    fgets(grepoutp[5], 40 , OS);
-    fgets(grepoutp[6], 50 , Kernel);
-    /*
-    printf("Gpout0= %s\n",grepoutp[0]);
-    printf("Gpout1= %s\n",grepoutp[1]);
-    printf("Gpout2= %s\n",grepoutp[2]);
-    printf("Gpout3= %s\n",grepoutp[3]);
-    printf("Gpout4= %s\n",grepoutp[4]);
-    */
+    fgets(grepoutp[0], 65, mem); 
+    fgets(grepoutp[1], 65, memu);
+    fgets(grepoutp[2], 65, cpu);
+    fgets(grepoutp[3], 65, uptime); 
+    fgets(grepoutp[4], 65 , device);
+    fgets(grepoutp[5], 65 , OS);
+    fgets(grepoutp[6], 65 , Kernel);
+
     pclose(mem);
     pclose(memu);
     pclose(cpu);
@@ -127,8 +118,7 @@ void drawoutp(char **argv, int voffset, int hoffset) {
     //char (*sysinfo)[300];
     //printf("Mem alloc=%lu\n",sizeof(*sysinfo)*7);
     //sysinfo = calloc(300, sizeof(*sysinfo)); 
-    char (*sysinfo)[300] = calloc(1, sizeof(*sysinfo)); //Remember this.
-
+    char (*sysinfo)[170] = calloc(7, sizeof(*sysinfo)); //Dont mess this up next time lol.
 
     getdigits(grepoutp[0], sysinfo[0]);
     getdigits(grepoutp[1], sysinfo[1]);
@@ -137,7 +127,7 @@ void drawoutp(char **argv, int voffset, int hoffset) {
     prcsstring(grepoutp[4], sysinfo[4], ':');
     prcsstring(grepoutp[5], sysinfo[5], ':');
     prcsstring(grepoutp[6], sysinfo[6], ':');
-    
+
     //printf("CPU info %s\n", sysinfo[2]);
     
     memory = atoi(sysinfo[0]);
@@ -145,19 +135,20 @@ void drawoutp(char **argv, int voffset, int hoffset) {
     //printf("memfree=%d",memoryfree);
     memory = memory/1024;
     memoryfree = memory - (memoryfree/1024);
-    free(sysinfo);
-    char info[9][303];
-
-    sprintf(info[0], "%s@%s\'", getenv("USER"), Linux.nodename );
+    char info[9][100];
+    //char *red = {"\e[31m"};
+    sprintf(info[0], "\e[1m%s\e[0m@\e[1m%s\e[0m\'", getenv("USER"), Linux.nodename );
     sprintf(info[1], "---------------------------\'");
-    sprintf(info[2], "Host:%s\'", sysinfo[4]);
-    sprintf(info[3], "OS:%s %s\'", sysinfo[5], Linux.machine);
-    sprintf(info[4], "Kernel:%s\'", sysinfo[6]);
-    sprintf(info[5], "DE: %s\'", getenv("GDMSESSION"));
-    sprintf(info[6], "Memory: %dmB / %dmB\'",memoryfree, memory);
-    sprintf(info[7], "CPU:%s\'",sysinfo[2]);
-    sprintf(info[8], "Uptime: %s\'", sysinfo[3]);
+    sprintf(info[2], "\e[1mHost:\e[0m%s\'", sysinfo[4]);
+    sprintf(info[3], "\e[1mOS:\e[0m%s %s\'", sysinfo[5], Linux.machine);
+    sprintf(info[4], "\e[1mKernel:\e[0m%s\'", sysinfo[6]);
+    sprintf(info[5], "\e[1mDE:\e[0m %s %s\'", getenv("XDG_CURRENT_DESKTOP"), getenv("GDMSESSION"));
+    sprintf(info[6], "\e[1mMemory:\e[0m %dmB / %dmB\'",memoryfree, memory);
+    sprintf(info[7], "\e[1mCPU:\e[0m%s\'",sysinfo[2]);
+    sprintf(info[8], "\e[1mUptime:\e[0m %s\'", sysinfo[3]);
     
+    free(sysinfo);
+
     FILE *art = fopen("cfetchart", "r");
 
     int newlcnt = 0; // Newline Count
@@ -267,6 +258,7 @@ void args(int argc, char **argv){
         popconf();
         printf("cfetch: restoring configuration file.\n");
         sleep(2);
+        popconf();
         exit(0);
         break;
 
